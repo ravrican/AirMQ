@@ -1,0 +1,64 @@
+On System#Boot do
+     name AirMQ_%mac_int%
+     gpio,12,1
+     gpio,15,1
+endon
+
+on mqtt#connected do
+     publish Sensors/%mac_int%/Start, '{"id": "%mac_int%", "ip": "%ip%", "VCC": "%vcc%", "build": "%sysbuild_git%"}'
+endon
+
+on setctl do
+  if %eventvalue1%=0
+     publish Sysctl/%mac_int%/Status,"Maintenance mode"
+     gpio,12,1
+  endif
+  if %eventvalue1%=1
+     publish Sysctl/%mac_int%/Status,"Continuous mode"
+     let,1,%eventvalue2%
+     timerset,1,2
+  endif
+  if %eventvalue1%=2
+     let,2,%eventvalue2%
+     let,3,%eventvalue3%
+     publish Sysctl/%mac_int%/Status,"Lasersave mode"
+     timerset,2,%v2%
+  endif
+  if %eventvalue1%=3
+     let,2,%eventvalue2%
+     let,3,%eventvalue3%
+     let,4,%eventvalue4%
+     publish Sysctl/%mac_int%/Status,"Sendall mode"
+     timerset,2,%v2%
+     timerset,4,%v4%
+  endif
+endon
+
+on rules#timer=2 do
+     longpulse,12,0,%v3%     
+     timerset,2,%v2%
+     asyncevent,sendAQ
+endon
+
+on rules#timer=4 do
+     asyncevent,sendNM
+     timerset,4,%v4%
+endon
+
+on sendAQ do
+     taskrun,1
+     taskrun,2
+     publish Sensors/%mac_int%/telemetry, '{"id": "%mac_int%","Uptime":"%uptime%", "RSSI":"%rssi%", "VCC":"%vcc%"}'
+     publish Sensors/%mac_int%/sensordata, '{"id": "%mac_int%","PMS1":"[PMS#PMS1]","PMS25":"[PMS#PMS25]", "PMS10":"[PMS#PMS10]", "Temp":"[BME#Temp]","Hum":"[BME#Hum]", "Press":"[BME#Press]"}'
+     SendToHTTP api.thingspeak.com,80,/update?api_key=CNTX8CTLX3LZOL0F&field1=[BME#Temp]&field2=[BME#Hum]&field3=[BME#Press]&field4=[PMS#PMS1]&field5=[PMS#PMS25]&field6=[PMS#PMS10]
+endon
+
+on sendNM do
+     taskrun,1
+     taskrun,2
+     SendToHTTP narodmon.ru,80,/get?ID=%sysname%&T=[BME#Temp]&H=[BME#Hum]&P=[BME#Press]&D1=[PMS#PMS1]&D2=[PMS#PMS25]&D3=[PMS#PMS10]
+endon
+
+on click do
+     reboot
+endon
