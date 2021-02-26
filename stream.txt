@@ -1,0 +1,22 @@
+novor.duckdns.org
+    randroidev@gmail.com
+    54a28d1d-5a76-4c53-9d6d-ac4cc8122ef1
+
+
+
+$ v4l2-ctl --list-devices
+USB 2.0 Camera: USB Camera (usb-0000:00:1d.7-2):
+	/dev/video0
+
+$ ffmpeg -f v4l2 -list_formats all -i /dev/video0
+Raw       :     yuyv422 :           YUYV 4:2:2 : 640x480 352x288 320x240 176x144 160x120 640x480
+
+
+1. 
+apt install motion
+/etc/motion/motion.conf 
+https://pimylifeup.com/raspberry-pi-webcam-server/
+
+##########################################################
+2. On your apache webserver
+<img src="http://127.0.0.1:8888/?action=stream" />
